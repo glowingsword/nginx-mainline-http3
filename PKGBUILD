@@ -87,13 +87,19 @@ prepare() {
 build() {
   cd ${srcdir}/boringssl && git checkout origin/master && git submodule init && git submodule update
   mkdir ${srcdir}/boringssl/build
-  ##                                                                                                                                  ##
-  # Warning, without clear CPPFLAGS BoringSSL build fails to build because it is incompatible with CPPFLAGS='-D_FORTIFY_SOURCE=2 flag. #
-  # With D_FORTIFY_SOURCE compilation return "FAILED: crypto/test/CMakeFiles/test_support_lib.dir/abi_test.cc.o"  error                #
-  ##                                                                                                                                  ##
-  #CPPFLAGS='' cmake -GNinja -S ${srcdir}/boringssl/ -B  ${srcdir}/boringssl/build/ -DBORINGSSL_DIR=${srcdir}/boringssl/
   
-  CC=/usr/bin/clang CXX=/usr/bin/clang++ cmake -GNinja -S ${srcdir}/boringssl/ -B  ${srcdir}/boringssl/build/ -DBORINGSSL_DIR=${srcdir}/boringssl/
+  ##                                                                                                                                                 ##
+  # Warning, when you build the boringssl you can see the error.                                                                                      #
+  # With D_FORTIFY_SOURCE compilation return "FAILED: crypto/test/CMakeFiles/test_support_lib.dir/abi_test.cc.o"  error                               #
+  # See the https://bugs.chromium.org/p/boringssl/issues/detail?id=403#c1https://bugs.chromium.org/p/boringssl/issues/detail?id=403#c1                #
+  # You can use CPPFLAGS='' cmake -GNinja -S ${srcdir}/boringssl/ -B  ${srcdir}/boringssl/build/ -DBORINGSSL_DIR=${srcdir}/boringssl/                 #
+  # or sed -i 's/write(STDERR_FILENO, buf, strlen(buf));/(void)write(STDERR_FILENO, buf, strlen(buf));/g' ${srcdir}/boringssl/crypto/test/abi_test.cc #
+  #  CC=/usr/bin/clang CXX=/usr/bin/clang++ cmake -GNinja -S ${srcdir}/boringssl/ -B  ${srcdir}/boringssl/build/ -DBORINGSSL_DIR=${srcdir}/boringssl/ #
+  # or varinat from the line 101                                                                                                                      #
+  ##                                                                                                                                                 ##
+  
+  cmake -E env CXXFLAGS="-Wno-unused-result $CXXFLAGS" cmake -GNinja -S ${srcdir}/boringssl/ -B  ${srcdir}/boringssl/build/ -DBORINGSSL_DIR=${srcdir}/boringssl/
+  
   ninja -C ${srcdir}/boringssl/build 
   cd ${srcdir}/boringssl && mkdir -p .openssl/lib && cd .openssl && ln -s ../include . && cd ../
   cd ${srcdir}/boringssl && cp ${srcdir}/boringssl/build/crypto/libcrypto.a ${srcdir}/boringssl/build/ssl/libssl.a .openssl/lib && cd ..
