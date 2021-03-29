@@ -87,10 +87,13 @@ prepare() {
 build() {
   cd ${srcdir}/boringssl && git checkout origin/master && git submodule init && git submodule update
   mkdir ${srcdir}/boringssl/build
-  ##                                                                                                                     ##
-  # Warning, without clear CPPFLAGS BoringSSL build fails to build because it is incompatible with FORTIFY_SOURCE=2 flag. #
-  ##                                                                                                                     ##
-  CPPFLAGS='' cmake -GNinja -S ${srcdir}/boringssl/ -B  ${srcdir}/boringssl/build/ -DBORINGSSL_DIR=${srcdir}/boringssl/
+  ##                                                                                                                                  ##
+  # Warning, without clear CPPFLAGS BoringSSL build fails to build because it is incompatible with CPPFLAGS='-D_FORTIFY_SOURCE=2 flag. #
+  # With D_FORTIFY_SOURCE compilation return "FAILED: crypto/test/CMakeFiles/test_support_lib.dir/abi_test.cc.o"  error                #
+  ##                                                                                                                                  ##
+  #CPPFLAGS='' cmake -GNinja -S ${srcdir}/boringssl/ -B  ${srcdir}/boringssl/build/ -DBORINGSSL_DIR=${srcdir}/boringssl/
+  
+  CC=/usr/bin/clang CXX=/usr/bin/clang++ cmake -GNinja -S ${srcdir}/boringssl/ -B  ${srcdir}/boringssl/build/ -DBORINGSSL_DIR=${srcdir}/boringssl/
   ninja -C ${srcdir}/boringssl/build 
   cd ${srcdir}/boringssl && mkdir -p .openssl/lib && cd .openssl && ln -s ../include . && cd ../
   cd ${srcdir}/boringssl && cp ${srcdir}/boringssl/build/crypto/libcrypto.a ${srcdir}/boringssl/build/ssl/libssl.a .openssl/lib && cd ..
